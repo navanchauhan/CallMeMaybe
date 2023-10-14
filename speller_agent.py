@@ -21,6 +21,7 @@ class SpellerAgent(RespondAgent[SpellerAgentConfig]):
         conversation_id: str,
         is_interrupt: bool = False,
     ) -> Tuple[Optional[str], bool]:
+        print("SpellerAgent: ", human_input)
         return "".join(c + " " for c in human_input), False
 
 
@@ -28,6 +29,7 @@ class SpellerAgentFactory(AgentFactory):
     def create_agent(
         self, agent_config: AgentConfig, logger: Optional[logging.Logger] = None
     ) -> BaseAgent:
+        print("Setting up agent")
         if agent_config.type == AgentType.CHAT_GPT:
             return ChatGPTAgent(
                 agent_config=typing.cast(ChatGPTAgentConfig, agent_config)
