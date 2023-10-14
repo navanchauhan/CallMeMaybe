@@ -6,9 +6,17 @@ authors = ["Navan Chauhan <navanchauhan@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
-langchain = "^0.0.314"
+python = "^3.11,<3.12"
 twilio = "^8.9.1"
+python-dotenv = "^1.0.0"
+flask = "^3.0.0"
+flask-sock = "^0.7.0"
+simple-websocket = "^1.0.0"
+pyngrok = "^7.0.0"
+redis = "^5.0.1"
+vonage = "^3.10.0"
+vocode = "^0.1.111"
+elevenlabs = "0.2.20"
 
 
 [build-system]
