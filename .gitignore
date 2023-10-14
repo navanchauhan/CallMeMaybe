@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Google Cloud
+credentials.json
+token.json
+
 # C extensions
 *.so
 
