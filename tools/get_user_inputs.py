@@ -16,7 +16,7 @@ INPUTS = {}
 
 @tool("get_desired_inputs")
 def get_desired_inputs(input: str) -> dict:
-    """
+    """Use this between tools to get the desired inputs for the next tool.
     You will be given a task that will be performed by an autonomous agent on behalf of a user. You will gather any necessary data from the user to complete the specified task before executing the task.
     """
 

@@ -14,6 +14,9 @@ toolkit = GmailToolkit()
 
 tools = toolkit.get_tools()
 
+my_information = "Use this information whenever needed User information " + open("info.txt").read() + "  . Your task "
+
+
 @tool("email tasks")
 def email_tasks(input: str) -> bool:
     """draft/send/search/get email and return whatever you get.
@@ -27,7 +30,8 @@ def email_tasks(input: str) -> bool:
 
     for example, `send an email to grsi2038@colorado.edu asking him if he is still looking for a job and that he should continue doing whatever he his doing because he will eventually find it` will email grsi2038@colorado.edu
     """
-    prompt = input
+    prompt = my_information + input
+    #print(input) 
 
     llm = OpenAI(temperature=0)
     agent = initialize_agent(

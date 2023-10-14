@@ -11,10 +11,8 @@ import sys
 import typing
 from dotenv import load_dotenv
 
-from tools.contacts import get_all_contacts
-from tools.vocode import call_phone_number
-from tools.email_tool import email_tasks
-from tools.summarize import summarize
+from lang_prompt_demo import tools
+
 from langchain.memory import ConversationBufferMemory
 from langchain.utilities import SerpAPIWrapper
 
@@ -25,7 +23,7 @@ from stdout_filterer import RedactPhoneNumbers
 load_dotenv()
 
 from langchain.chat_models import ChatOpenAI
-from langchain.chat_models import BedrockChat
+# from langchain.chat_models import BedrockChat
 from langchain.agents import initialize_agent
 from langchain.agents import AgentType as LangAgentType
 
@@ -36,7 +34,7 @@ memory = ConversationBufferMemory(memory_key="chat_history", return_messages=Tru
     # Logging of LLMChains
 verbose = True
 agent = initialize_agent(
-    tools=[get_all_contacts, call_phone_number, email_tasks, summarize] + load_tools(["serpapi", "human"]),
+    tools=tools,
     llm=llm,
     agent=LangAgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
     verbose=verbose,

@@ -75,16 +75,17 @@ telephony_server = TelephonyServer(
     inbound_call_configs=[
         TwilioInboundCallConfig(
             url="/inbound_call",
-            # agent_config=ChatGPTAgentConfig(
-            #     initial_message=BaseMessage(text="What up."),
-            #     prompt_preamble="Act as a customer talking to 'Cosmos', a pizza establisment ordering a large pepperoni pizza for pickup. If asked for a name, your name is 'Hunter McRobie', and your credit card number is 4743 2401 5792 0539 CVV: 123 and expiratoin is 10/25. If asked for numbers, say them one by one",#"Have a polite conversation about life while talking like a pirate.",
-            #     generate_responses=True,
-            #     model_name="gpt-3.5-turbo"
-            # ),
-            agent_config=SpellerAgentConfig(generate_responses=False, initial_message=BaseMessage(text="What up.")),
+            agent_config=ChatGPTAgentConfig(
+                initial_message=BaseMessage(text="Ahoy Matey! Pizza Ahoy here! How may I help you."),
+                prompt_preamble="You are receiving calls on behald of 'Pizza Ahoy!', a pizza establisment taking orders only for pickup. YOu will be provided the transcript from a speech to text model, say what you would say in that siutation. Talk like a pirate. Apologise to customer if they ask for delivery.",
+                generate_responses=True,
+                model_name="gpt-3.5-turbo"
+            ),
+            # agent_config=SpellerAgentConfig(generate_responses=False, initial_message=BaseMessage(text="What up.")),
             twilio_config=TwilioConfig(
                 account_sid=os.environ["TWILIO_ACCOUNT_SID"],
                 auth_token=os.environ["TWILIO_AUTH_TOKEN"],
+                record=True
             ),
             synthesizer_config=ElevenLabsSynthesizerConfig.from_telephone_output_device(
             api_key=os.getenv("ELEVENLABS_API_KEY"),
@@ -96,45 +97,76 @@ telephony_server = TelephonyServer(
     logger=logger,
 )
 
-async def send_message(message: str) -> AsyncIterable[str]:
-    callback = AsyncIteratorCallbackHandler()
-    model = ChatOpenAI(
-        streaming=True,
-        verbose=True,
-        callbacks=[callback],
+import os
+import sys
+import typing
+from dotenv import load_dotenv
+
+from tools.contacts import get_all_contacts
+from tools.vocode import call_phone_number
+from tools.summarize import summarize
+from tools.get_user_inputs import get_desired_inputs
+from tools.email_tool import email_tasks
+from langchain.memory import ConversationBufferMemory
+from langchain.agents import load_tools
+
+from stdout_filterer import RedactPhoneNumbers
+
+load_dotenv()
+
+from langchain.chat_models import ChatOpenAI
+# from langchain.chat_models import BedrockChat
+from langchain.agents import initialize_agent
+from langchain.agents import AgentType
+
+from langchain.tools import WikipediaQueryRun
+
+memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+tools=load_tools(["human", "wikipedia"]) + [get_all_contacts, call_phone_number, email_tasks, summarize]
+
+tools_desc = ""
+for tool in tools:
+    tools_desc += tool.name + " : "  + tool.description + "\n"
+
+def rephrase_prompt(objective: str) -> str:
+    # llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")  # type: ignore
+    # pred = llm.predict(f"Based on these tools {tools_desc} with the {objective} should be done in the following manner (outputting a single sentence), allowing for failure: ")
+    # print(pred)
+    # return pred
+    return f"{objective}"
+
+with open("info.txt") as f:
+    my_info = f.read()
+    memory.chat_memory.add_user_message("User information to us " + my_info + " end of user information.")
+
+
+class QueryItem(BaseModel):
+    query: str
+
+@app.post("/senpai")
+def exec_and_return(item: QueryItem):
+    query = item.query
+    verbose_value = False
+    print(query)
+    OBJECTIVE = (
+        query
+        or "Find a random person in my contacts and tell them a joke"
+    )
+    llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")  # type: ignore
+    #llm = BedrockChat(model_id="anthropic.claude-instant-v1", model_kwargs={"temperature":0})  # type: ignore
+    #memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+    # Logging of LLMChains
+    verbose = True
+    agent = initialize_agent(
+        tools=tools,
+        llm=llm,
+        agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
+        verbose=verbose_value,
+        memory=memory,
     )
 
-    async def wrap_done(fn: Awaitable, event: asyncio.Event):
-        """Wrap an awaitable with a event to signal when it's done or an exception is raised."""
-        try:
-            await fn
-        except Exception as e:
-            # TODO: handle exception
-            print(f"Caught exception: {e}")
-        finally:
-            # Signal the aiter to stop.
-            event.set()
+    out = agent.run(OBJECTIVE)
 
-    # Begin a task that runs in the background.
-    task = asyncio.create_task(wrap_done(
-        model.agenerate(messages=[[HumanMessage(content=message)]]),
-        callback.done),
-    )
-
-    async for token in callback.aiter():
-        # Use server-sent-events to stream the response
-        yield f"data: {token}\n\n"
-
-    await task
-
-
-class StreamRequest(BaseModel):
-    """Request body for streaming."""
-    message: str
-
-
-@app.post("/stream")
-def stream(body: StreamRequest):
-    return StreamingResponse(send_message(body.message), media_type="text/event-stream")
+    return out
 
 app.include_router(telephony_server.get_router())

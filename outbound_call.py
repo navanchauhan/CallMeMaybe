@@ -17,7 +17,7 @@ from vocode.streaming.agent.chat_gpt_agent import ChatGPTAgent
 from vocode.streaming.models.agent import ChatGPTAgentConfig
 from vocode.streaming.models.message import BaseMessage
 
-from vocode.streaming.models.synthesizer import ElevenLabsSynthesizerConfig
+from vocode.streaming.models.synthesizer import ElevenLabsSynthesizerConfig, AzureSynthesizerConfig
 
 BASE_URL = os.environ["BASE_URL"]
 
@@ -30,12 +30,12 @@ async def main():
 
     outbound_call = OutboundCall(
         base_url=BASE_URL,
-        to_phone="+12243882079",
+        to_phone="+17208828227",
         from_phone="+18445610144",
         config_manager=config_manager,
         agent_config=ChatGPTAgentConfig(
-                initial_message=BaseMessage(text="Hello. Hello"),
-                prompt_preamble="Act as a customer talking to 'Cosmos', a pizza establisment ordering a large pepperoni pizza for pickup. If asked for a name, your name is 'Hunter McRobie', and your credit card number is 4-7-4-3 2-4-0-1 5-7-9-2 0-5-39 CVV: 123 and expiratoin is 10/25. If asked for numbers, say them one by one",#"Have a polite conversation about life while talking like a pirate.",
+                initial_message=BaseMessage(text="Hello. Can I order a pizza?"),
+                prompt_preamble="Act as a customer talking to 'Cosmos', a pizza establisment ordering a large pepperoni pizza for pickup. If asked for a name, your name is 'Hunter McRobie', and your credit card number is 4-7-4-3 2-4-0-1 5-7-9-2 0-5-3-9 CVV: 123 and expiration is 10/25. If asked for numbers, say them one by one. NEVER ACT AS COSMOS, ONLY AS THE CUSTOMER. Continue speaking if there are too many interuptions. Make sure you soundl like a pirate.",#"Have a polite conversation about life while talking like a pirate.",
                 generate_responses=True,
             ),
         twilio_config=TwilioConfig(

@@ -4,29 +4,25 @@ import os
 from langchain.agents import tool
 from dotenv import load_dotenv
 
-from langchain.agents.agent_toolkits import GmailToolkit
-
 from langchain.llms import OpenAI
 from langchain.agents import initialize_agent, AgentType
+from langchain.prompts.prompt import PromptTemplate
+
 
 load_dotenv()
-toolkit = GmailToolkit()
-
-tools = toolkit.get_tools()
 
 @tool("summarize")
 def summarize(input: str) -> bool:
     """
     Summarize the response to the input prompt.
     """
-    prompt = input
+    data = input
 
     llm = OpenAI(temperature=0)
-    agent = initialize_agent(
-        prompt=prompt,
-        llm=llm,
-        agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
-    )
 
-    return agent.run(prompt)
+    template = "Human: Can you summarize this in a couple of sentences: {data}"
+    prompt = PromptTemplate(input_variables=["data"], template=template)
+    pred = llm.predict(prompt.format(data=data))
+    return pred
+    #preferred_forums[make] = [make_url]
     

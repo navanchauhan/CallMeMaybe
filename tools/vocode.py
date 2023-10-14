@@ -11,6 +11,8 @@ from vocode.streaming.models.transcriber import (
     PunctuationEndpointingConfig,
 )
 
+from vocode.streaming.models.telephony import TwilioConfig
+
 
 load_dotenv()
 
@@ -26,18 +28,19 @@ import time
 LOOP = asyncio.new_event_loop()
 asyncio.set_event_loop(LOOP)
 
+my_information = "Use this information whenever needed User information " + open("info.txt").read() + "  . Your task "
 
 @tool("call phone number")
 def call_phone_number(input: str) -> str:
-    """calls a phone number as a bot and returns a transcript of the conversation.
+    """calls a phone number as a bot and returns a transcript of the conversation. Verifies the phone number from the user before calling.
     make sure you call `get all contacts` first to get a list of phone numbers to call.
-    the input to this tool is a pipe separated list of a phone number, a prompt, and the first thing the bot should say.
+    the input to this tool is a pipe separated list of a phone number, a prompt (including history), and the first thing the bot should say
     The prompt should instruct the bot with what to do on the call and be in the 3rd person,
     like 'the assistant is performing this task' instead of 'perform this task'.
 
-    should only use this tool once it has found an adequate phone number to call.
+    e.g. phone_number|prompt|initial_message
 
-    for example, `+15555555555|the assistant is explaining the meaning of life|i'm going to tell you the meaning of life` will call +15555555555, say 'i'm going to tell you the meaning of life', and instruct the assistant to tell the human what the meaning of life is.
+    should only use this tool once it has found and verified adequate phone number to call.
     """
     phone_number, prompt, initial_message = input.split("|",2)
     print(phone_number, prompt, initial_message)
@@ -48,9 +51,15 @@ def call_phone_number(input: str) -> str:
         config_manager=RedisConfigManager(),
         agent_config=ChatGPTAgentConfig(
             initial_message=BaseMessage(text=initial_message),
-            prompt_preamble=prompt,
+            prompt_preamble=my_information + prompt,
             generate_responses=True,
+            allow_agent_to_be_cut_off=False
         ),
+        twilio_config=TwilioConfig(
+                account_sid=os.environ["TWILIO_ACCOUNT_SID"],
+                auth_token=os.environ["TWILIO_AUTH_TOKEN"],
+                record=True
+            ),
         synthesizer_config=ElevenLabsSynthesizerConfig.from_telephone_output_device(
             api_key=os.getenv("ELEVENLABS_API_KEY"),
             voice_id=os.getenv("ELEVENLABS_VOICE_ID"),
