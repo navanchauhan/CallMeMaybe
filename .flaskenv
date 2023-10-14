@@ -1,0 +1,2 @@
+FLASK_APP=transcribe_call.py
+FLASK_ENV=development
