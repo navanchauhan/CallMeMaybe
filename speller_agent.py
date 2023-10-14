@@ -6,6 +6,43 @@ from vocode.streaming.models.agent import AgentConfig, AgentType, ChatGPTAgentCo
 from vocode.streaming.agent.base_agent import BaseAgent, RespondAgent
 from vocode.streaming.agent.factory import AgentFactory
 
+import os
+import sys
+import typing
+from dotenv import load_dotenv
+
+from tools.contacts import get_all_contacts
+from tools.vocode import call_phone_number
+from tools.email_tool import email_tasks
+from tools.summarize import summarize
+from langchain.memory import ConversationBufferMemory
+from langchain.utilities import SerpAPIWrapper
+
+from langchain.agents import load_tools
+
+from stdout_filterer import RedactPhoneNumbers
+
+load_dotenv()
+
+from langchain.chat_models import ChatOpenAI
+from langchain.chat_models import BedrockChat
+from langchain.agents import initialize_agent
+from langchain.agents import AgentType as LangAgentType
+
+
+llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")  # type: ignore
+#llm = BedrockChat(model_id="anthropic.claude-instant-v1", model_kwargs={"temperature":0})  # type: ignore
+memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+    # Logging of LLMChains
+verbose = True
+agent = initialize_agent(
+    tools=[get_all_contacts, call_phone_number, email_tasks, summarize] + load_tools(["serpapi", "human"]),
+    llm=llm,
+    agent=LangAgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
+    verbose=verbose,
+    memory=memory,
+)
+
 
 class SpellerAgentConfig(AgentConfig, type="agent_speller"):
     pass
@@ -22,14 +59,15 @@ class SpellerAgent(RespondAgent[SpellerAgentConfig]):
         is_interrupt: bool = False,
     ) -> Tuple[Optional[str], bool]:
         print("SpellerAgent: ", human_input)
-        return "".join(c + " " for c in human_input), False
+        res = agent.run(human_input)
+        return res, False
 
 
 class SpellerAgentFactory(AgentFactory):
     def create_agent(
         self, agent_config: AgentConfig, logger: Optional[logging.Logger] = None
     ) -> BaseAgent:
-        print("Setting up agent")
+        print("Setting up agent", agent_config, agent_config.type)
         if agent_config.type == AgentType.CHAT_GPT:
             return ChatGPTAgent(
                 agent_config=typing.cast(ChatGPTAgentConfig, agent_config)

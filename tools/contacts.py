@@ -9,11 +9,12 @@ import os
 CONTACTS = [
     {
         "name": "Greg",
-        "phone" : os.getenv("TEST_PHONE_NUMBER")
+        "phone" : os.getenv("TEST_PHONE_NUMBER"),
+        "email": "grsi2038@colorado.edu"
     }
 ]
 
 @tool("get_all_contacts")
 def get_all_contacts(placeholder: str) -> List[dict]:
-    """Returns all contacts in the user's phone book."""
+    """Returns all contacts in the user's phone book which includes email and phone numbers."""
     return CONTACTS

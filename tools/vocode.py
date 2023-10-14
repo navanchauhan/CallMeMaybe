@@ -29,8 +29,8 @@ asyncio.set_event_loop(LOOP)
 
 @tool("call phone number")
 def call_phone_number(input: str) -> str:
-    """Use when you need to make a phone call. Calls a phone number as a bot and returns a transcript of the conversation.
-
+    """calls a phone number as a bot and returns a transcript of the conversation.
+    make sure you call `get all contacts` first to get a list of phone numbers to call.
     the input to this tool is a pipe separated list of a phone number, a prompt, and the first thing the bot should say.
     The prompt should instruct the bot with what to do on the call and be in the 3rd person,
     like 'the assistant is performing this task' instead of 'perform this task'.
@@ -39,7 +39,8 @@ def call_phone_number(input: str) -> str:
 
     for example, `+15555555555|the assistant is explaining the meaning of life|i'm going to tell you the meaning of life` will call +15555555555, say 'i'm going to tell you the meaning of life', and instruct the assistant to tell the human what the meaning of life is.
     """
-    phone_number, prompt, initial_message = input.split("|", 2)
+    phone_number, prompt, initial_message = input.split("|",2)
+    print(phone_number, prompt, initial_message)
     call = OutboundCall(
         base_url=os.environ["BASE_URL"],
         to_phone=phone_number,
@@ -60,10 +61,4 @@ def call_phone_number(input: str) -> str:
         logger=logging.Logger("OutboundCall"),
     )
     LOOP.run_until_complete(call.start())
-    while True:
-        maybe_transcript = get_transcript(call.conversation_id)
-        if maybe_transcript:
-            delete_transcript(call.conversation_id)
-            return maybe_transcript
-        else:
-            time.sleep(1)
+    return "Call Started"
